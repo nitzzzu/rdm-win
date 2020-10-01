@@ -21,11 +21,11 @@ jobs:
       RELEASE_DIR: ${{ github.workspace }}\rdm\bin\windows\release
     steps:
       - uses: actions/checkout@v2
-      
+
       - shell: cmd
         run: |
-          set /p VERSION=<version.txt
-      #echo "action_state=yellow" >> $GITHUB_ENV
+          set /p v=<version.txt
+          echo "VERSION=%v%" >> $GITHUB_ENV
 
       - shell: cmd
         run: |
