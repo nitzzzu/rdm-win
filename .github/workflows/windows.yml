@@ -3,7 +3,7 @@ name: RDM windows build CI
 on:
   push:
     paths-ignore:
-      - README.md
+      #- README.md
       - LICENSE
 
 env:
