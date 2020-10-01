@@ -7,7 +7,6 @@ on:
       - LICENSE
 
 env:
-  VERSION: 2020.3
   PYTHON_EMBEDDED_VERSION: 3.7.9
   QT_VER: 5.15.1
 
@@ -21,102 +20,111 @@ jobs:
       THIRDPARTY_DIR: ${{ github.workspace }}\rdm\3rdparty
       RELEASE_DIR: ${{ github.workspace }}\rdm\bin\windows\release
     steps:
-      - name: Clone repo
-        uses: actions/checkout@v2
-        with:
-          repository: uglide/RedisDesktopManager
-          path: rdm
-          submodules: recursive
-          ref: ${{ env.VERSION }}
-
-      - name: Cache Qt
-        id: WindowsCacheQt
-        uses: actions/cache@v1
-        with:
-          path: ../Qt/${{ env.QT_VER }}
-          key: Qt${{ env.QT_VER }}
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v2
-        with:
-          version: ${{ env.QT_VER }}
-          modules: qtcharts
-          cached: ${{ steps.WindowsCacheQt.outputs.cache-hit }}
-
-      - name: Apply patch
-        run: git apply ../hiredis-win.patch
-        working-directory: ${{ env.THIRDPARTY_DIR }}/qredisclient/3rdparty/hiredis
-
-      - name: Install zlib
-        working-directory: ${{ env.THIRDPARTY_DIR }}
-        run: nuget install zlib-msvc14-x64 -Version 1.2.11.7795
-
-      - name: mklink
-        shell: cmd
-        run: mklink /d "C:\Python37-x64" "C:\hostedtoolcache\windows\python\${{ env.PYTHON_EMBEDDED_VERSION }}\x64"
-
-      - name: Install python requirements
-        shell: cmd
-        working-directory: ${{ env.OUTPUT_DIR }}
+      - shell: cmd
         run: |
-          xcopy %SRC_DIR%\py . /s /i
-          mkdir Lib\site-packages
-          pip3 install -t Lib\site-packages -r requirements.txt
-          python -m compileall -b .
-          del /s /q *.py requirements.txt
-          forfiles /p "." /s /m __pycache__ /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
-          forfiles /p "." /s /m *.dist-info /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
-          forfiles /p "." /s /m *.egg-info /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
+          set /p VERSION=<version.txt
+      #echo "action_state=yellow" >> $GITHUB_ENV
 
-      - name: Build
-        shell: cmd
-        env:
-          vc_arch: x64
+      - shell: cmd
         run: |
-          python rdm\build\utils\set_version.py ${{ env.VERSION }} > %SRC_DIR%\version.h
-          cd %SRC_DIR%
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %vc_arch%
-          qmake rdm.pro CONFIG-=debug
-          nmake
+            echo"%VERSION%
 
-      - name: Add python embedded
-        shell: powershell
-        working-directory: ${{ env.OUTPUT_DIR }}
-        run: |
-          wget "https://www.python.org/ftp/python/${{ env.PYTHON_EMBEDDED_VERSION }}/python-${{ env.PYTHON_EMBEDDED_VERSION }}-embed-amd64.zip" -outfile "python-embed.zip"
-          7z.exe x python-embed.zip python37.zip python3.dll python37.dll unicodedata.pyd _bz2.pyd
-          del python-embed.zip
+      # - name: Clone repo
+      #   uses: actions/checkout@v2
+      #   with:
+      #     repository: uglide/RedisDesktopManager
+      #     path: rdm
+      #     submodules: recursive
+      #     ref: ${{ env.VERSION }}
 
-      - name: Install qt requirements
-        shell: cmd
-        working-directory: ${{ env.OUTPUT_DIR }}
-        run: |
-          copy %RELEASE_DIR%\rdm.exe %OUTPUT_DIR%
-          windeployqt --no-angle --no-opengl-sw --no-compiler-runtime --no-translations --release --force --qmldir %SRC_DIR%/qml rdm.exe
-          makensis.exe /V1 /DVERSION=${{ env.VERSION }}.0 ../installer.nsi
+      # - name: Cache Qt
+      #   id: WindowsCacheQt
+      #   uses: actions/cache@v1
+      #   with:
+      #     path: ../Qt/${{ env.QT_VER }}
+      #     key: Qt${{ env.QT_VER }}
 
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.VERSION }}
-          release_name: ${{ env.VERSION }}
-          body: |
-            RDM Windows v${{ env.VERSION }}
-          draft: false
-          prerelease: false
+      # - name: Install Qt
+      #   uses: jurplel/install-qt-action@v2
+      #   with:
+      #     version: ${{ env.QT_VER }}
+      #     modules: qtcharts
+      #     cached: ${{ steps.WindowsCacheQt.outputs.cache-hit }}
 
-      - name: Upload release
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: rdm/build/windows/installer/redis-desktop-manager-${{ env.VERSION }}.0.exe
-          asset_name: redis-desktop-manager-${{ env.VERSION }}.exe
-          asset_content_type: application/vnd.microsoft.portable-executable
+      # - name: Apply patch
+      #   run: git apply ../hiredis-win.patch
+      #   working-directory: ${{ env.THIRDPARTY_DIR }}/qredisclient/3rdparty/hiredis
+
+      # - name: Install zlib
+      #   working-directory: ${{ env.THIRDPARTY_DIR }}
+      #   run: nuget install zlib-msvc14-x64 -Version 1.2.11.7795
+
+      # - name: mklink
+      #   shell: cmd
+      #   run: mklink /d "C:\Python37-x64" "C:\hostedtoolcache\windows\python\${{ env.PYTHON_EMBEDDED_VERSION }}\x64"
+
+      # - name: Install python requirements
+      #   shell: cmd
+      #   working-directory: ${{ env.OUTPUT_DIR }}
+      #   run: |
+      #     xcopy %SRC_DIR%\py . /s /i
+      #     mkdir Lib\site-packages
+      #     pip3 install -t Lib\site-packages -r requirements.txt
+      #     python -m compileall -b .
+      #     del /s /q *.py requirements.txt
+      #     forfiles /p "." /s /m __pycache__ /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
+      #     forfiles /p "." /s /m *.dist-info /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
+      #     forfiles /p "." /s /m *.egg-info /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
+
+      # - name: Build
+      #   shell: cmd
+      #   env:
+      #     vc_arch: x64
+      #   run: |
+      #     python rdm\build\utils\set_version.py %VERSION% > %SRC_DIR%\version.h
+      #     cd %SRC_DIR%
+      #     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %vc_arch%
+      #     qmake rdm.pro CONFIG+=release
+      #     nmake /S /NOLOGO release
+
+      # - name: Add python embedded
+      #   shell: powershell
+      #   working-directory: ${{ env.OUTPUT_DIR }}
+      #   run: |
+      #     wget "https://www.python.org/ftp/python/${{ env.PYTHON_EMBEDDED_VERSION }}/python-${{ env.PYTHON_EMBEDDED_VERSION }}-embed-amd64.zip" -outfile "python-embed.zip"
+      #     7z.exe x python-embed.zip python37.zip python3.dll python37.dll unicodedata.pyd _bz2.pyd
+      #     del python-embed.zip
+
+      # - name: Install qt requirements
+      #   shell: cmd
+      #   working-directory: ${{ env.OUTPUT_DIR }}
+      #   run: |
+      #     copy %RELEASE_DIR%\rdm.exe %OUTPUT_DIR%
+      #     windeployqt --no-angle --no-opengl-sw --no-compiler-runtime --no-translations --release --force --qmldir %SRC_DIR%/qml rdm.exe
+      #     makensis.exe /V1 /DVERSION=${{ env.VERSION }}.0 ../installer.nsi
+
+      # - name: Create release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: ${{ env.VERSION }}
+      #     release_name: ${{ env.VERSION }}
+      #     body: |
+      #       RDM Windows v${{ env.VERSION }}
+      #     draft: false
+      #     prerelease: false
+
+      # - name: Upload release
+      #   uses: actions/upload-release-asset@v1.0.2
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: rdm/build/windows/installer/redis-desktop-manager-${{ env.VERSION }}.0.exe
+      #     asset_name: redis-desktop-manager-${{ env.VERSION }}.exe
+      #     asset_content_type: application/vnd.microsoft.portable-executable
 
       # - uses: actions/upload-artifact@v2
       #   with:
