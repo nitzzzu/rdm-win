@@ -20,6 +20,8 @@ jobs:
       THIRDPARTY_DIR: ${{ github.workspace }}\rdm\3rdparty
       RELEASE_DIR: ${{ github.workspace }}\rdm\bin\windows\release
     steps:
+      - uses: actions/checkout@v2
+      
       - shell: cmd
         run: |
           set /p VERSION=<version.txt
