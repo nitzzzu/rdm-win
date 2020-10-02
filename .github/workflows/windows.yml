@@ -73,6 +73,7 @@ jobs:
         run: |
           xcopy %SRC_DIR%\py . /s /i
           mkdir Lib\site-packages
+          pip3 install --upgrade pip
           pip3 install -t Lib\site-packages -r requirements.txt
           python -m compileall -b .
           del /s /q *.py requirements.txt
