@@ -7,7 +7,7 @@ on:
       - LICENSE
 
 env:
-  VERSION: 2020.3
+  VERSION: 2020.4
   PYTHON_EMBEDDED_VERSION: 3.7.9
   QT_VER: 5.15.1
 
@@ -46,6 +46,10 @@ jobs:
       - name: Prepare build
         shell: cmd
         run: |
+          cd %THIRDPARTY_DIR%\lz4\build\cmake
+          cmake -G "Visual Studio 16 2019" -A x64 -DLZ4_BUNDLED_MODE=on -DBUILD_SHARED_LIBS=on --build .
+          cmake --build . --config "Release"
+
           cd %THIRDPARTY_DIR%
           nuget install zlib-msvc14-x64 -Version 1.2.11.7795
 
