@@ -43,20 +43,27 @@ jobs:
           modules: qtcharts
           cached: ${{ steps.WindowsCacheQt.outputs.cache-hit }}
 
-      - name: Apply patch
-        run: git apply ../hiredis-win.patch
-        working-directory: ${{ env.THIRDPARTY_DIR }}/qredisclient/3rdparty/hiredis
+      - name: Prepare build
+        run: |
+          cd %THIRDPARTY_DIR%
+          nuget install zlib-msvc14-x64 -Version 1.2.11.7795
+          cd %THIRDPARTY_DIR%\qredisclient\3rdparty\hiredis
+          git apply ..\hiredis-win.patch
+          mklink /d "C:\Python37-x64" "C:\hostedtoolcache\windows\python\${{ env.PYTHON_EMBEDDED_VERSION }}\x64"
 
-      - name: Install zlib
-        working-directory: ${{ env.THIRDPARTY_DIR }}
-        run: nuget install zlib-msvc14-x64 -Version 1.2.11.7795
-
-      - name: mklink
+      - name: Build
         shell: cmd
-        run: mklink /d "C:\Python37-x64" "C:\hostedtoolcache\windows\python\${{ env.PYTHON_EMBEDDED_VERSION }}\x64"
+        working-directory: ${{ env.SRC_DIR }}
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          lrelease rdm.pro
+          qmake rdm.pro CONFIG+=release VERSION+=%VERSION%
+          nmake /S /NOLOGO release
+          copy %RELEASE_DIR%\rdm.exe %OUTPUT_DIR%
+          xcopy resources\translations\*.qm %OUTPUT_DIR%\translations /s /i
 
-      - name: Install python requirements
-        shell: cmd
+      - name: Create package
+        shell: powershell
         working-directory: ${{ env.OUTPUT_DIR }}
         run: |
           xcopy %SRC_DIR%\py . /s /i
@@ -68,31 +75,12 @@ jobs:
           forfiles /p "." /s /m *.dist-info /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
           forfiles /p "." /s /m *.egg-info /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
 
-      - name: Build
-        shell: cmd
-        env:
-          vc_arch: x64
-        run: |
-          python rdm\build\utils\set_version.py %VERSION% > %SRC_DIR%\version.h
-          cd %SRC_DIR%
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" %vc_arch%
-          qmake rdm.pro CONFIG+=release
-          nmake /S /NOLOGO release
-
-      - name: Add python embedded
-        shell: powershell
-        working-directory: ${{ env.OUTPUT_DIR }}
-        run: |
           wget "https://www.python.org/ftp/python/${{ env.PYTHON_EMBEDDED_VERSION }}/python-${{ env.PYTHON_EMBEDDED_VERSION }}-embed-amd64.zip" -outfile "python-embed.zip"
           7z.exe x python-embed.zip python37.zip python3.dll python37.dll unicodedata.pyd _bz2.pyd
           del python-embed.zip
 
-      - name: Install qt requirements
-        shell: cmd
-        working-directory: ${{ env.OUTPUT_DIR }}
-        run: |
-          copy %RELEASE_DIR%\rdm.exe %OUTPUT_DIR%
           windeployqt --no-angle --no-opengl-sw --no-compiler-runtime --no-translations --release --force --qmldir %SRC_DIR%/qml rdm.exe
+
           makensis.exe /V1 /DVERSION=${{ env.VERSION }}.0 ../installer.nsi
 
       - name: Create release
