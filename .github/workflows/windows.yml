@@ -8,6 +8,7 @@ on:
 
 env:
   VERSION: 2020.4
+  GIT_REF: 6a635b624c2a24c98b973b7c1e7729b4d8c98976
   PYTHON_EMBEDDED_VERSION: 3.7.9
   QT_VER: 5.15.1
 
@@ -27,7 +28,7 @@ jobs:
           repository: uglide/RedisDesktopManager
           path: rdm
           submodules: recursive
-          ref: ${{ env.VERSION }}
+          ref: ${{ env.GIT_REF }}
 
       - name: Cache Qt
         id: WindowsCacheQt
@@ -46,12 +47,12 @@ jobs:
       - name: Prepare build
         shell: cmd
         run: |
+          cd %THIRDPARTY_DIR%
+          nuget install zlib-msvc14-x64 -Version 1.2.11.7795
+
           cd %THIRDPARTY_DIR%\lz4\build\cmake
           cmake -G "Visual Studio 16 2019" -A x64 -DLZ4_BUNDLED_MODE=on -DBUILD_SHARED_LIBS=on --build .
           cmake --build . --config "Release"
-
-          cd %THIRDPARTY_DIR%
-          nuget install zlib-msvc14-x64 -Version 1.2.11.7795
 
           cd %THIRDPARTY_DIR%\qredisclient\3rdparty\hiredis
           git apply ..\hiredis-win.patch
@@ -87,7 +88,7 @@ jobs:
           forfiles /p "." /s /m tests /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
 
           C:\msys64\usr\bin\wget "https://www.python.org/ftp/python/%PYTHON_EMBEDDED_VERSION%/python-%PYTHON_EMBEDDED_VERSION%-embed-amd64.zip"
-          7z.exe x python-%PYTHON_EMBEDDED_VERSION%-embed-amd64.zip python37.zip python3.dll python37.dll unicodedata.pyd _bz2.pyd
+          7z.exe x python-%PYTHON_EMBEDDED_VERSION%-embed-amd64.zip python37.zip python37.dll unicodedata.pyd _bz2.pyd
           del python-%PYTHON_EMBEDDED_VERSION%-embed-amd64.zip
 
           windeployqt --no-angle --no-opengl-sw --no-compiler-runtime --no-translations --release --force --qmldir %SRC_DIR%/qml rdm.exe
@@ -104,11 +105,9 @@ jobs:
           release_name: ${{ env.VERSION }}
           body: |
             RDM Windows v${{ env.VERSION }}
-          draft: false
-          prerelease: false
 
       - name: Upload release
-        uses: actions/upload-release-asset@v1.0.2
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -116,8 +115,3 @@ jobs:
           asset_path: rdm/build/windows/installer/redis-desktop-manager-${{ env.VERSION }}.0.exe
           asset_name: redis-desktop-manager-${{ env.VERSION }}.exe
           asset_content_type: application/vnd.microsoft.portable-executable
-
-      # - uses: actions/upload-artifact@v2
-      #   with:
-      #     name: rdm
-      #     path: ${{ env.OUTPUT_DIR }}
