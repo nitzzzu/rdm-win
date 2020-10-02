@@ -10,5 +10,5 @@ To test Github Actions whith a great tool that's shitty to compile.
 
 ## Inspired from
 
-https://github.com/lework/RedisDesktopManager-Windows
-https://github.com/FuckDoctors/rdm-builder
+https://github.com/lework/RedisDesktopManager-Windows  
+https://github.com/FuckDoctors/rdm-builder  

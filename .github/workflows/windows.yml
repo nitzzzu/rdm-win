@@ -49,7 +49,7 @@ jobs:
           nuget install zlib-msvc14-x64 -Version 1.2.11.7795
           cd %THIRDPARTY_DIR%\qredisclient\3rdparty\hiredis
           git apply ..\hiredis-win.patch
-          mklink /d "C:\Python37-x64" "C:\hostedtoolcache\windows\python\${{ env.PYTHON_EMBEDDED_VERSION }}\x64"
+          mklink /d "C:\Python37-x64" "C:\hostedtoolcache\windows\python\%PYTHON_EMBEDDED_VERSION%\x64"
 
       - name: Build
         shell: cmd
@@ -75,13 +75,13 @@ jobs:
           forfiles /p "." /s /m *.dist-info /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
           forfiles /p "." /s /m *.egg-info /c "cmd /c if @isdir==TRUE rd /s /q @file 2>nul" 2>nul | exit /b 0
 
-          wget "https://www.python.org/ftp/python/${{ env.PYTHON_EMBEDDED_VERSION }}/python-${{ env.PYTHON_EMBEDDED_VERSION }}-embed-amd64.zip" -outfile "python-embed.zip"
+          wget "https://www.python.org/ftp/python/%PYTHON_EMBEDDED_VERSION%/python-%PYTHON_EMBEDDED_VERSION%-embed-amd64.zip" -outfile "python-embed.zip"
           7z.exe x python-embed.zip python37.zip python3.dll python37.dll unicodedata.pyd _bz2.pyd
           del python-embed.zip
 
           windeployqt --no-angle --no-opengl-sw --no-compiler-runtime --no-translations --release --force --qmldir %SRC_DIR%/qml rdm.exe
 
-          makensis.exe /V1 /DVERSION=${{ env.VERSION }}.0 ../installer.nsi
+          makensis.exe /V1 /DVERSION=%VERSION%.0 ../installer.nsi
 
       - name: Create release
         id: create_release
