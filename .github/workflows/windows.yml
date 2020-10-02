@@ -44,11 +44,14 @@ jobs:
           cached: ${{ steps.WindowsCacheQt.outputs.cache-hit }}
 
       - name: Prepare build
+        shell: cmd
         run: |
           cd %THIRDPARTY_DIR%
           nuget install zlib-msvc14-x64 -Version 1.2.11.7795
+
           cd %THIRDPARTY_DIR%\qredisclient\3rdparty\hiredis
           git apply ..\hiredis-win.patch
+
           mklink /d "C:\Python37-x64" "C:\hostedtoolcache\windows\python\%PYTHON_EMBEDDED_VERSION%\x64"
 
       - name: Build
@@ -56,14 +59,16 @@ jobs:
         working-directory: ${{ env.SRC_DIR }}
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+
           lrelease rdm.pro
           qmake rdm.pro CONFIG+=release VERSION+=%VERSION%
           nmake /S /NOLOGO release
+
           copy %RELEASE_DIR%\rdm.exe %OUTPUT_DIR%
           xcopy resources\translations\*.qm %OUTPUT_DIR%\translations /s /i
 
       - name: Create package
-        shell: powershell
+        shell: cmd
         working-directory: ${{ env.OUTPUT_DIR }}
         run: |
           xcopy %SRC_DIR%\py . /s /i
