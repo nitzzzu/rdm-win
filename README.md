@@ -1,6 +1,6 @@
 ## What?
 
-Windows package for [Redis Desktop Manager](https://github.com/uglide/RedisDesktopManager)
+Windows package for [RDM - GUI for Redis®](https://github.com/uglide/RedisDesktopManager)
 
 ## Why?
 
